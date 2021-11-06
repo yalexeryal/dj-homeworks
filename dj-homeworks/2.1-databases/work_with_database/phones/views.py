@@ -1,27 +1,37 @@
-from django.shortcuts import render, redirect
+from django.db.models.manager import BaseManager
+from django.shortcuts import render
 from phones.models import Phone
-
-def index(request):
-    return redirect('catalog')
+from django.http.request import HttpRequest
 
 
-def show_catalog(request):
+def sorting(sort: str):
+    s_list = []
+    if sort == "name":
+        s_list = list(Phone.objects.order_by("name"))
+    elif sort == "min_price":
+        s_list = list(Phone.objects.order_by("-price"))
+    elif sort == "max_price":
+        s_list = list(Phone.objects.order_by("price"))
+    else:
+        s_list = Phone.objects.all()
+    return s_list
+
+
+def show_catalog(request: HttpRequest):
     template = 'catalog.html'
-    phones_query = Phone.objects.all()
-    filter_phone_name=request.GET.get('sort')
-    print(filter_phone_name)
-    if filter_phone_name == 'name':
-        phones_query = phones_query.order_by('name')
-    if filter_phone_name == 'min_price':
-        phones_query = phones_query.order_by('price')
-    if filter_phone_name == 'max_price':
-        phones_query = phones_query.order_by('-price')
-    context = {'phones': phones_query}
+    sort = request.GET.get('sort')
+    if sort:
+        s_list = sorting(sort)
+        context = {"phones": list(s_list)}
+    else:
+        phones = Phone.objects.all()
+        context = {"phones": list(phones)}
+
     return render(request, template, context)
 
 
 def show_product(request, slug):
     template = 'product.html'
-    phone_query = Phone.objects.get(slug=slug)
-    context = {'phone': phone_query}
+    p = Phone.objects.filter(slug=slug).get()
+    context = {"phone": p}
     return render(request, template, context)
